@@ -1,0 +1,52 @@
+services:
+  registry-public:
+    image: registry:3
+    restart: unless-stopped
+
+    ports:
+      - "${REGISTRY_PUBLIC_HOST_PORT:-0.0.0.0:5000}:5000/tcp"
+
+    environment:
+      REGISTRY_STORAGE_FILESYSTEM_ROOTDIRECTORY: /var/lib/registry
+      REGISTRY_STORAGE_DELETE_ENABLED: "true"
+      OTEL_TRACES_EXPORTER: "none"
+
+    volumes:
+      - type: bind
+        source: ${REGISTRY_PUBLIC_DATA:-./.containers/registry/data/public}
+        target: /var/lib/registry
+        bind:
+          create_host_path: false
+
+  registry-private:
+    image: registry:3
+    restart: unless-stopped
+    volumes:
+      - type: bind
+        source: ${REGISTRY_PRIVATE_DATA:-./.containers/registry/data/private}
+        target: /var/lib/registry
+        bind:
+          create_host_path: false
+    environment:
+      REGISTRY_STORAGE_FILESYSTEM_ROOTDIRECTORY: /var/lib/registry
+      REGISTRY_STORAGE_DELETE_ENABLED: "true"
+      OTEL_TRACES_EXPORTER: "none"
+    ports:
+      - "${REGISTRY_PRIVATE_HOST_PORT:-0.0.0.0:5001}:5000/tcp"
+
+  registry-cache:
+    image: registry:3
+    restart: unless-stopped
+    volumes:
+      - type: bind
+        source: ${REGISTRY_CACHE_DATA:-./.containers/registry/data/cache}
+        target: /var/lib/registry
+        bind:
+          create_host_path: false
+    environment:
+      REGISTRY_STORAGE_FILESYSTEM_ROOTDIRECTORY: /var/lib/registry
+      REGISTRY_STORAGE_DELETE_ENABLED: "true"
+      OTEL_TRACES_EXPORTER: "none"
+
+    ports:
+      - "${REGISTRY_CACHE_HOST_PORT:-0.0.0.0:5002}:5000/tcp"
