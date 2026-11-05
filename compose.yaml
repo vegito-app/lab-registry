@@ -2,15 +2,13 @@ services:
   registry-public:
     image: registry:3
     restart: unless-stopped
-
     ports:
       - "${REGISTRY_PUBLIC_HOST_PORT:-0.0.0.0:5000}:5000/tcp"
-
     environment:
       REGISTRY_STORAGE_FILESYSTEM_ROOTDIRECTORY: /var/lib/registry
       REGISTRY_STORAGE_DELETE_ENABLED: "true"
       OTEL_TRACES_EXPORTER: "none"
-
+      REGISTRY_HTTP_HOST: https://registry-public.vegito.app
     volumes:
       - type: bind
         source: ${REGISTRY_PUBLIC_DATA:-./.containers/registry/data/public}
@@ -31,6 +29,7 @@ services:
       REGISTRY_STORAGE_FILESYSTEM_ROOTDIRECTORY: /var/lib/registry
       REGISTRY_STORAGE_DELETE_ENABLED: "true"
       OTEL_TRACES_EXPORTER: "none"
+      REGISTRY_HTTP_HOST: https://registry-private.vegito.app
     ports:
       - "${REGISTRY_PRIVATE_HOST_PORT:-0.0.0.0:5001}:5000/tcp"
 
@@ -46,7 +45,27 @@ services:
     environment:
       REGISTRY_STORAGE_FILESYSTEM_ROOTDIRECTORY: /var/lib/registry
       REGISTRY_STORAGE_DELETE_ENABLED: "true"
+      READ_ONLY_REGISTRIES: false
       OTEL_TRACES_EXPORTER: "none"
-
+      DELETE_IMAGES: true
+      REGISTRY_HTTP_HOST: https://registry-cache.vegito.app
     ports:
       - "${REGISTRY_CACHE_HOST_PORT:-0.0.0.0:5002}:5000/tcp"
+
+  registry-ui:
+    image: joxit/docker-registry-ui:latest
+    container_name: registry-ui
+    restart: unless-stopped
+
+    environment:
+      SINGLE_REGISTRY: "false"
+      DEFAULT_REGISTRIES: "https://registry-public.vegito.app,https://registry-private.vegito.app,https://registry-cache.vegito.app"
+      READ_ONLY_REGISTRIES: "true"
+      DELETE_IMAGES: "true"
+      SHOW_CONTENT_DIGEST: "true"
+      SHOW_CATALOG_NB_TAGS: "true"
+      CATALOG_ELEMENTS_LIMIT: "1000"
+      THEME: "dark"
+
+    ports:
+      - ${REGISTRY_UI_HOST_PORT:-0.0.0.0:5100}:80
